@@ -1,0 +1,5 @@
+# IDE
+.idea/
+
+# Polish reference copies of the specifications (local only)
+docs/pl/
