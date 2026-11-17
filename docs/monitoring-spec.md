@@ -59,7 +59,7 @@ Metrics are registered in the `service` layer via an injected `MeterRegistry`; t
 ## 6. Kubernetes (Docker Desktop and EKS)
 
 - Install `kube-prometheus-stack` (Helm, pinned version; check the current chart) in the `monitoring` namespace, with Alertmanager disabled; values: `values-local.yaml` (Docker Desktop) and `values-dev.yaml` (EKS).
-- The `catalog` and `orders` charts contain a `ServiceMonitor` template, enabled with `monitoring.serviceMonitor.enabled=true` (default `false`, because it requires the operator's CRDs; see [k8s-local-spec.md §5](./k8s-local-spec.md#5-charts-and-parameterization)). The services get `SPRING_PROFILES_ACTIVE=...,monitoring`.
+- The `catalog-service` and `orders-service` charts contain a `ServiceMonitor` template, enabled with `monitoring.serviceMonitor.enabled=true` (default `false`, because it requires the operator's CRDs; see [k8s-local-spec.md §5](./k8s-local-spec.md#5-charts-and-parameterization)). The services get `SPRING_PROFILES_ACTIVE=...,monitoring`.
 - Order: first kube-prometheus-stack, then upgrade the application charts with `ServiceMonitor` enabled.
 - Storage: Docker Desktop – default StorageClass; EKS – gp3 via the EBS CSI Driver (add-on shared with the ELK module, see [infra-spec.md](./infra-spec.md#3-resources)).
 - Approximate resources (dev): Prometheus approx. 1 Gi of memory, Grafana approx. 256 Mi, operator and kube-state-metrics together approx. 300 Mi, node-exporter small per node.

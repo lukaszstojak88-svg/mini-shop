@@ -4,7 +4,7 @@ Load when working on `docker-compose.yml`, `infra/local/**`, Dockerfiles and `.e
 
 ## 1. Goal
 
-`docker compose up --build` starts everything: PostgreSQL, Keycloak, `catalog`, `orders`, frontend. For working in the IDE you can start only the infrastructure: `docker compose up postgres keycloak`, and run the services and `ng serve` locally.
+`docker compose up --build` starts everything: PostgreSQL, Keycloak, `catalog-service`, `orders-service`, frontend. For working in the IDE you can start only the infrastructure: `docker compose up postgres keycloak`, and run the services and `ng serve` locally.
 
 ## 2. Services
 
@@ -12,9 +12,9 @@ Load when working on `docker-compose.yml`, `infra/local/**`, Dockerfiles and `.e
 |---|---|---|---|---|
 | `postgres` | official `postgres` (pinned version) | 5432 | – | `pg_isready` |
 | `keycloak` | `quay.io/keycloak/keycloak:<pinned tag>` | 8081 → 8080 | `postgres` (healthy) | `/health/ready` on the management port (9000); the image has no `curl` – use a TCP/`bash` test |
-| `catalog` | build `services/catalog` | 8082 → 8080 | `postgres`, `keycloak` (healthy) | `/actuator/health/readiness` |
-| `orders` | build `services/orders` | 8083 → 8080 | `postgres`, `keycloak`, `catalog` (healthy) | `/actuator/health/readiness` |
-| `frontend` | build `frontend` | 8080 → 80 | `catalog`, `orders` (healthy) | `GET /` |
+| `catalog-service` | build `services/catalog-service` | 8082 → 8080 | `postgres`, `keycloak` (healthy) | `/actuator/health/readiness` |
+| `orders-service` | build `services/orders-service` | 8083 → 8080 | `postgres`, `keycloak`, `catalog-service` (healthy) | `/actuator/health/readiness` |
+| `frontend` | build `frontend` | 8080 → 80 | `catalog-service`, `orders-service` (healthy) | `GET /` |
 
 Shared default compose network; hostnames = service names. Volume `postgres-data` (persistent data). `restart: unless-stopped` only for `postgres` and `keycloak`.
 
@@ -40,13 +40,13 @@ Passwords are not hardcoded in the SQL file: a `.sh` script in the init director
 Environment variables per [backend-spec.md §6](./backend-spec.md#6-configuration-environment-variables); `SPRING_PROFILES_ACTIVE=dev`, `SPRING_LIQUIBASE_CONTEXTS=dev` (product seed).
 
 ### Dockerfile (both services, multi-stage)
-1. **build:** image with JDK 21 + Maven wrapper; copy `pom.xml` before the sources (dependency cache); `./mvnw -pl <module> -am package -DskipTests`.
-2. **runtime:** JRE 21 (Temurin, slim/alpine variant matching the architecture), non-root user, `EXPOSE 8080`, `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75`, `ENTRYPOINT ["java","-jar","/app/app.jar"]`.
+1. **build:** image with JDK 25 + Maven wrapper; copy `pom.xml` before the sources (dependency cache); `./mvnw -pl <module> -am package -DskipTests`.
+2. **runtime:** JRE 25 (Temurin, slim/alpine variant matching the architecture), non-root user, `EXPOSE 8080`, `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75`, `ENTRYPOINT ["java","-jar","/app/app.jar"]`.
 3. The image contains no secrets; `.dockerignore` excludes `target/`, `.git/`, `node_modules/`.
 
 ## 6. Frontend
 
-Image per [frontend-spec.md §6](./frontend-spec.md#6-build-and-container). Variables: `KEYCLOAK_ISSUER` (`http://localhost:8081/realms/minishop`), `OIDC_CLIENT_ID` (`minishop-spa`), `CATALOG_UPSTREAM` (`catalog:8080`), `ORDERS_UPSTREAM` (`orders:8080`).
+Image per [frontend-spec.md §6](./frontend-spec.md#6-build-and-container). Variables: `KEYCLOAK_ISSUER` (`http://localhost:8081/realms/minishop`), `OIDC_CLIENT_ID` (`minishop-spa`), `CATALOG_UPSTREAM` (`catalog-service:8080`), `ORDERS_UPSTREAM` (`orders-service:8080`).
 
 ## 7. `.env.example`
 
@@ -59,7 +59,7 @@ Contains only dev-only values, with the comment "do not use outside the local en
 | Everything | `docker compose up --build` |
 | Infrastructure only | `docker compose up postgres keycloak` |
 | Reset data | `docker compose down -v` |
-| Service logs | `docker compose logs -f orders` |
+| Service logs | `docker compose logs -f orders-service` |
 | Smoke test | `./scripts/smoke.sh` ([test-spec.md §6](./test-spec.md#6-environment-smoke-test-after-docker-compose-up)) |
 
 ## 9. Common problems (for the README)
@@ -81,7 +81,7 @@ Details and rationale: [observability-spec.md](./observability-spec.md). The Ela
 | `filebeat` | official (same version) | – | configuration `infra/local/elk/filebeat.yml`; collects containers labeled `logging=true` |
 
 - Startup: `docker compose --profile logging up --build`; reset logs: `docker compose down -v` (also removes volumes).
-- Application services (`catalog`, `orders`) and `keycloak` have the label `logging=true`.
+- Application services (`catalog-service`, `orders-service`) and `keycloak` have the label `logging=true`.
 - Dashboard import: `scripts/kibana-import.sh` (objects from `infra/local/elk/kibana-objects.ndjson`).
 - Common problems: Elasticsearch exits with code 137 (not enough memory for Docker) or reports a `vm.max_map_count` error (Linux) – see the Elasticsearch documentation for the pinned version.
 
@@ -95,7 +95,7 @@ The same system can be run on Kubernetes in Docker Desktop with the same charts 
 
 | Service | Host port | Notes |
 |---|---|---|
-| `prometheus` | 9090 | configuration `infra/local/monitoring/prometheus.yml`, targets `catalog:8080` and `orders:8080` (`/actuator/prometheus`), 3-day retention |
+| `prometheus` | 9090 | configuration `infra/local/monitoring/prometheus.yml`, targets `catalog-service:8080` and `orders-service:8080` (`/actuator/prometheus`), 3-day retention |
 | `grafana` | 3000 | datasource and dashboard provisioning from `infra/local/monitoring/grafana/`; dev-only admin password from `.env` |
 
 Startup: `docker compose --profile monitoring up --build` (services get the Spring `monitoring` profile). Can run together with the `logging` profile.

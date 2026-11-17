@@ -4,7 +4,7 @@ Load when working on `services/**`. General rules: [project-spec.md](./project-s
 
 ## 1. Project layout
 
-Maven multi-module: `services/pom.xml` (parent: `spring-boot-starter-parent`, modules `catalog`, `orders`). Each module is a separate Spring Boot application built into a separate image.
+Maven multi-module: `services/pom.xml` (parent: `spring-boot-starter-parent`, modules `catalog-service`, `orders-service` – directory name = Maven module = `artifactId`). Each module is a separate Spring Boot application built into a separate image. Java packages stay `pl.minishop.catalog` / `pl.minishop.orders`.
 
 Packages (example for `catalog`; `orders` analogously):
 
@@ -72,7 +72,11 @@ Liquibase: `src/main/resources/db/changelog/db.changelog-master.yaml` includes `
 ```json
 { "name": "Słuchawki BT", "description": "…", "price": 249.00, "stock": 12, "version": 0 }
 ```
-`version` required only in PUT. Validation: `name` 1–120 characters (after trim, non-empty); `description` ≤ 2000; `price` > 0, ≤ 9,999,999,999.99, scale ≤ 2; `stock` ≥ 0.
+One `ProductRequest` record for POST and PUT; `version` is nullable in the record and required only in PUT (missing → 400 `VALIDATION_ERROR`). Validation: `name` 1–120 characters (after trim, non-empty); `description` ≤ 2000; `price` > 0, ≤ 99,999.99, scale ≤ 2 (the cap keeps the maximum order total – 50 items × 100 × price – within `NUMERIC(12,2)`); `stock` ≥ 0.
+
+`sort` accepts only `name`, `price`, `createdAt` (with `asc`/`desc`); any other property → 400 `VALIDATION_ERROR`.
+
+Note: every stock reservation/release increments `version`, so an admin's PUT may get 409 `PRODUCT_VERSION_CONFLICT` after an order was placed in the meantime – expected behavior (the frontend asks to reload the product).
 
 `ProductResponse`:
 
@@ -151,7 +155,7 @@ Validation: 1–50 items; `quantity` 1–100; duplicate `productId` → 400 `VAL
   "createdAt": "…",
   "items": [ { "productId": 1, "productName": "Słuchawki BT", "unitPrice": 249.00, "quantity": 1, "lineTotal": 249.00 } ] }
 ```
-`OrderSummary` (list): `id`, `createdAt`, `itemCount`, `total`, `status` (+ `customerName` for `scope=all`).
+`OrderSummary` (list): `id`, `createdAt`, `itemCount` (sum of `quantity` over all items), `total`, `status` (+ `customerName` for `scope=all`).
 
 Status transitions: `NEW → CONFIRMED` (admin), `NEW → CANCELLED` (owner/admin). All others are forbidden.
 
@@ -198,7 +202,7 @@ Cancellation: in a single transaction, load the order with optimistic locking, c
 | `SPRING_LIQUIBASE_CONTEXTS` | both | `dev` |
 | `MINISHOP_SECURITY_ISSUER` | both | `http://localhost:8081/realms/minishop` |
 | `MINISHOP_SECURITY_JWK_SET_URI` | both | `http://keycloak:8080/realms/minishop/protocol/openid-connect/certs` |
-| `MINISHOP_CATALOG_BASE_URL` | orders | `http://catalog:8080` |
+| `MINISHOP_CATALOG_BASE_URL` | orders | `http://catalog-service:8080` |
 | `MINISHOP_CATALOG_TOKEN_URI` | orders | `http://keycloak:8080/realms/minishop/protocol/openid-connect/token` |
 | `MINISHOP_CATALOG_CLIENT_SECRET` | orders | dev-only |
 

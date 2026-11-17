@@ -50,7 +50,7 @@ Remote state in S3 with locking. For VPC and EKS, proven community modules (`ter
 
 ```
 infra/helm/
-├── catalog/    ├── orders/    ├── frontend/    ├── keycloak/    └── db-init/ (or a hook in one of the charts)
+├── catalog-service/    ├── orders-service/    ├── frontend/    ├── keycloak/    └── db-init/ (or a hook in one of the charts)
 ```
 Each chart: `Deployment` (2 replicas for catalog/orders/frontend; 1 for Keycloak), `Service` (ClusterIP), `ServiceAccount`, `ExternalSecret`, `HorizontalPodAutoscaler` (CPU, after adding metrics-server), `PodDisruptionBudget`, `Ingress` (where exposed).
 
@@ -108,4 +108,4 @@ Assumption: a Route 53 zone exists for the user's domain. The `shop.<domain>` an
 
 - Core: applications log to stdout with `requestId` (`kubectl logs`), resource metrics from metrics-server (`kubectl top`).
 - Optional module (only on request): Elastic Stack (ECK) per [observability-spec.md](./observability-spec.md). Application and infrastructure metrics: the optional Prometheus + Grafana module ([monitoring-spec.md](./monitoring-spec.md)), independent of ELK.
-- HPA: CPU target ~70%, min 2 / max 4 replicas for `catalog` and `orders`.
+- HPA: CPU target ~70%, min 2 / max 4 replicas for `catalog-service` and `orders-service`.

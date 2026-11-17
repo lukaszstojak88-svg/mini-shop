@@ -23,8 +23,6 @@ The order of steps is intentional (each step builds on the previous ones). Proje
 
 The default assumptions from [project-spec.md §10](./project-spec.md#10-default-assumptions-to-be-confirmed-by-the-project-owner) apply until changed. To be confirmed before the indicated steps:
 - Route 53 domain and HTTPS on AWS (before 7.5).
-- Public catalog reads and self-registration (before 1.1 and 2.3).
-- Group/package name (`pl.minishop`) (before 0.1).
 - Elastic Stack (optional module): whether and when to enable it; the EKS variant requires cost approval (`t3.large` nodes, EBS volume) before `O.2`.
 - Prometheus + Grafana (optional module): whether and when to enable it; the EKS variant (`O.4`) requires separate cost approval.
 
@@ -32,7 +30,7 @@ The default assumptions from [project-spec.md §10](./project-spec.md#10-default
 
 ## Phase 0 – Repository foundation
 
-### [ ] 0.1 Repository skeleton
+### [x] 0.1 Repository skeleton
 **Load:** `project-spec.md`
 **Scope:** `.gitignore`, `.editorconfig`, `README.md` (description, how to run – draft), `.env.example` (empty template with a comment), empty directories with `.gitkeep` according to the structure from §5, filling in the "Versions" table in `project-spec.md` with current, verified versions (Spring Boot, Spring Cloud compatible with Boot, Keycloak, PostgreSQL, Angular/Node).
 **Acceptance:** directory structure matches the specification; version table without "to be filled"; note on Spring Cloud/Boot compatibility.
@@ -56,10 +54,10 @@ The default assumptions from [project-spec.md §10](./project-spec.md#10-default
 
 ### [ ] 2.1 Skeleton, Liquibase, entity
 **Load:** `backend-spec.md` (§1, §2, §3.1), `test-spec.md` (§1–3)
-**Scope:** `services/pom.xml` (parent + `catalog` module), Maven wrapper, Spotless, JaCoCo, `catalog` module: application, configuration, Liquibase (`001-create-product-table`, `dev` seed), `Product` entity, repository, Actuator (probes), `X-Request-Id` filter; migration and repository tests with Testcontainers.
+**Scope:** `services/pom.xml` (parent + `catalog-service` module), Maven wrapper, Spotless, JaCoCo, `catalog-service` module: application, configuration, Liquibase (`001-create-product-table`, `dev` seed), `Product` entity, repository, Actuator (probes), `X-Request-Id` filter; migration and repository tests with Testcontainers.
 **Acceptance:** `./mvnw verify` green; migrations on an empty database; `ddl-auto=validate` passes; health `/actuator/health/readiness` = UP.
 **Prompt:**
-> Implement step 2.1 from `docs/implementation-plan.md`. Load `docs/backend-spec.md` (§1, §2, §3.1) and `docs/test-spec.md`. Create the parent POM and the `catalog` module according to the specification. At this stage no controllers and no security.
+> Implement step 2.1 from `docs/implementation-plan.md`. Load `docs/backend-spec.md` (§1, §2, §3.1) and `docs/test-spec.md`. Create the parent POM and the `catalog-service` module according to the specification. At this stage no controllers and no security.
 
 ### [ ] 2.2 Product API (CRUD, search, errors)
 **Load:** `backend-spec.md` (§2, §3.2, §5), `test-spec.md` (§2)
@@ -88,10 +86,10 @@ The default assumptions from [project-spec.md §10](./project-spec.md#10-default
 
 ### [ ] 3.1 Skeleton, Liquibase, entities
 **Load:** `backend-spec.md` (§1, §2, §4.1), `test-spec.md` (§1–3)
-**Scope:** `orders` module in the parent POM; configuration, `X-Request-Id` filter, Actuator; Liquibase (`orders`, `order_item`, indexes); entities, repositories; migration/repository tests.
+**Scope:** `orders-service` module in the parent POM; configuration, `X-Request-Id` filter, Actuator; Liquibase (`orders`, `order_item`, indexes); entities, repositories; migration/repository tests.
 **Acceptance:** `./mvnw verify` green for both modules; schema matches the specification.
 **Prompt:**
-> Implement step 3.1 from `docs/implementation-plan.md`. Load `docs/backend-spec.md` (§1, §2, §4.1) and `docs/test-spec.md`. Keep the same conventions as in the `catalog` module; no controllers.
+> Implement step 3.1 from `docs/implementation-plan.md`. Load `docs/backend-spec.md` (§1, §2, §4.1) and `docs/test-spec.md`. Keep the same conventions as in the `catalog-service` module; no controllers.
 
 ### [ ] 3.2 Feign client, resilience, service token
 **Load:** `backend-spec.md` (§4.4, §5, §6), `auth-spec.md` (§5), `test-spec.md` (§2)
@@ -120,7 +118,7 @@ The default assumptions from [project-spec.md §10](./project-spec.md#10-default
 
 ### [ ] 4.1 Dockerfiles and running the whole backend
 **Load:** `local-dev-spec.md` (§2, §5, §7–9), `backend-spec.md` (§6), `test-spec.md` (§6)
-**Scope:** Dockerfiles for `catalog` and `orders`, `.dockerignore`, extending `docker-compose.yml` (healthchecks, `depends_on`), variables in `.env.example`, `scripts/smoke.sh` (steps 1–4 per test-spec §6), README (running, common problems).
+**Scope:** Dockerfiles for `catalog-service` and `orders-service`, `.dockerignore`, extending `docker-compose.yml` (healthchecks, `depends_on`), variables in `.env.example`, `scripts/smoke.sh` (steps 1–4 per test-spec §6), README (running, common problems).
 **Acceptance:** `docker compose up --build` → everything healthy; `scripts/smoke.sh` passes (product creation, order, stock decrease and restoration); images run as a non-root user.
 **Prompt:**
 > Implement step 4.1 from `docs/implementation-plan.md`. Load `docs/local-dev-spec.md`, `docs/backend-spec.md` (§6) and `docs/test-spec.md` (§6). At the end, start everything and show the output of `scripts/smoke.sh`.
@@ -176,7 +174,7 @@ The default assumptions from [project-spec.md §10](./project-spec.md#10-default
 
 ### [ ] 6.2 Helm charts and local Kubernetes (Docker Desktop)
 **Load:** `k8s-local-spec.md` (entire), `infra-spec.md` (§5), `local-dev-spec.md` (§2, §5, §6), `auth-spec.md` (§2, §6), `test-spec.md` (§6)
-**Scope:** charts `postgres-local`, `db-init`, `keycloak`, `catalog`, `orders`, `frontend` with `values.yaml` and `values-local.yaml` (switches from k8s-local-spec §5, no environment-specific constants); `scripts/k8s-local-up.sh` and `k8s-local-down.sh` with a `docker-desktop` context check; additional redirect URI in the dev realm; parameterization of `scripts/smoke.sh` (`BASE_URL`, `AUTH_URL`); `helm lint` in `ci.yml`; README ("Running on Kubernetes – Docker Desktop", common pitfalls).
+**Scope:** charts `postgres-local`, `db-init`, `keycloak`, `catalog-service`, `orders-service`, `frontend` with `values.yaml` and `values-local.yaml` (switches from k8s-local-spec §5, no environment-specific constants); `scripts/k8s-local-up.sh` and `k8s-local-down.sh` with a `docker-desktop` context check; additional redirect URI in the dev realm; parameterization of `scripts/smoke.sh` (`BASE_URL`, `AUTH_URL`); `helm lint` in `ci.yml`; README ("Running on Kubernetes – Docker Desktop", common pitfalls).
 **Acceptance:** criteria from k8s-local-spec §8 (all pods Ready, full browser flow at `http://shop.localtest.me`, smoke test, `/internal/**` → 404, script idempotency, refusal to work in another context).
 **Prompt:**
 > Implement step 6.2 from `docs/implementation-plan.md`. Load `docs/k8s-local-spec.md`, `docs/infra-spec.md` (§5), `docs/local-dev-spec.md`, `docs/auth-spec.md` (§2, §6) and `docs/test-spec.md` (§6). The charts must be shared with the future AWS deployment – do not hardcode anything environment-specific. Verify the current ingress-nginx versions and the image behavior in Docker Desktop Kubernetes in the documentation. At the end, run everything on the local cluster and show the results of the acceptance criteria.
@@ -210,7 +208,7 @@ The default assumptions from [project-spec.md §10](./project-spec.md#10-default
 
 ### [ ] 7.4 Helm charts and service deployment
 **Load:** `infra-spec.md` (§5, §6), `local-dev-spec.md` (§5), `backend-spec.md` (§6)
-**Scope:** AWS `values-dev.yaml` for the `catalog`, `orders`, `frontend` charts from step 6.2 (ALB Ingress, images from ECR, ExternalSecret, HPA, PDB), possible template additions (without breaking `values-local.yaml`), manual push of images to ECR and `helm upgrade --install`.
+**Scope:** AWS `values-dev.yaml` for the `catalog-service`, `orders-service`, `frontend` charts from step 6.2 (ALB Ingress, images from ECR, ExternalSecret, HPA, PDB), possible template additions (without breaking `values-local.yaml`), manual push of images to ECR and `helm upgrade --install`.
 **Acceptance:** pods Ready; `helm lint` clean; `/internal/**` absent from the Ingresses; Liquibase migrations executed on RDS.
 **Prompt:**
 > Implement step 7.4 from `docs/implementation-plan.md`. Load `docs/infra-spec.md` (§5, §6), `docs/backend-spec.md` (§6). Keycloak will be added in 7.5, so at this stage only check pod health and the database connection.
@@ -231,7 +229,7 @@ The default assumptions from [project-spec.md §10](./project-spec.md#10-default
 
 ### [ ] 7.7 Scaling and basic diagnostics
 **Load:** `infra-spec.md` (§5, §10), `observability-spec.md` (§0)
-**Scope:** metrics-server, HPA for `catalog` and `orders`, PDB, verification of scaling under test load, `scripts/teardown.sh` (order: `helm uninstall` → `terraform destroy`), README with basic diagnostics (`kubectl logs`, `kubectl top`, searching by `requestId`).
+**Scope:** metrics-server, HPA for `catalog-service` and `orders-service`, PDB, verification of scaling under test load, `scripts/teardown.sh` (order: `helm uninstall` → `terraform destroy`), README with basic diagnostics (`kubectl logs`, `kubectl top`, searching by `requestId`).
 **Acceptance:** HPA scales up under load and back down; teardown leaves no orphaned ALBs or volumes.
 **Prompt:**
 > Implement step 7.7 from `docs/implementation-plan.md`. Load `docs/infra-spec.md` (§5, §10) and `docs/observability-spec.md` (§0). Do not add the Elastic Stack – it is an optional module.
@@ -272,7 +270,7 @@ The default assumptions from [project-spec.md §10](./project-spec.md#10-default
 
 ### [ ] O.4 Prometheus + Grafana on Kubernetes (Docker Desktop, then EKS)
 **Load:** `monitoring-spec.md` (§4–10), `k8s-local-spec.md` (§5, §10), `infra-spec.md` (§3, §9, §10)
-**Scope:** installing kube-prometheus-stack (Alertmanager disabled) with `values-local.yaml` and `values-dev.yaml`, `ServiceMonitor` template in the `catalog` and `orders` charts (`monitoring.serviceMonitor.enabled`), `PrometheusRule` from §7, dashboard as a ConfigMap, `monitoring` profile in the chart values, updating `scripts/k8s-local-up.sh`/`down.sh` (`--monitoring` option), on EKS: EBS CSI and StorageClass `gp3` (if not already present), `t3.large` nodes when enabled together with ELK.
+**Scope:** installing kube-prometheus-stack (Alertmanager disabled) with `values-local.yaml` and `values-dev.yaml`, `ServiceMonitor` template in the `catalog-service` and `orders-service` charts (`monitoring.serviceMonitor.enabled`), `PrometheusRule` from §7, dashboard as a ConfigMap, `monitoring` profile in the chart values, updating `scripts/k8s-local-up.sh`/`down.sh` (`--monitoring` option), on EKS: EBS CSI and StorageClass `gp3` (if not already present), `t3.large` nodes when enabled together with ELK.
 **Acceptance:** locally: targets `UP` in Prometheus, dashboard accessible via `port-forward`, stopping `catalog` triggers `ServiceDown`; on EKS the same plus no orphaned volumes after teardown; metrics not reachable through the Ingress.
 **Prompt:**
 > Implement step O.4 from `docs/implementation-plan.md` (optional module, I am enabling it deliberately; `O.3` is already done). Start with local Kubernetes (Docker Desktop). Do the EKS part only after my separate approval: show the `plan` and a cost summary before `apply`. Load `docs/monitoring-spec.md`, `docs/k8s-local-spec.md` and `docs/infra-spec.md` (§3, §9, §10). Verify the current version of the kube-prometheus-stack chart.

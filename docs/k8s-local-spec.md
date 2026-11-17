@@ -44,7 +44,7 @@ One set of charts in `infra/helm/`, differences only via values:
 | `postgres-local` | **local only**; StatefulSet, PVC (Docker Desktop default StorageClass), init script from `infra/local/postgres/init` (the same as in compose) |
 | `db-init` | Job (hook) creating databases and roles, idempotent; database host from values (`postgres-local` locally, RDS on AWS) |
 | `keycloak` | official image; realm JSON passed via `--set-file realmJson=<path>` (a chart cannot read files outside its directory): dev realm locally, production realm on AWS |
-| `catalog`, `orders`, `frontend` | Deployment, Service, probes, securityContext, resources, Ingress (frontend and `/api/*`), optionally HPA/PDB |
+| `catalog-service`, `orders-service`, `frontend` | Deployment, Service, probes, securityContext, resources, Ingress (frontend and `/api/*`), optionally HPA/PDB |
 
 Common switches (names to be stabilized in step 6.2 and recorded in the chart README):
 
@@ -70,7 +70,7 @@ Rules: templates contain no environment-specific constants; dev secrets never in
 2. Builds the `catalog-service`, `orders-service`, `frontend` images with the `local` tag.
 3. Installs ingress-nginx (official chart; pinned version) with `--wait`, if not installed.
 4. Creates the `minishop` namespace.
-5. Installs in order with `--wait`: `postgres-local` → `db-init` → `keycloak` (with `--set-file realmJson`) → `catalog` → `orders` → `frontend`.
+5. Installs in order with `--wait`: `postgres-local` → `db-init` → `keycloak` (with `--set-file realmJson`) → `catalog-service` → `orders-service` → `frontend`.
 6. Prints the addresses (`http://shop.localtest.me`) and test credentials (`admin/admin`, `user/user`).
 
 `scripts/k8s-local-down.sh`: `helm uninstall` of the application components, deletion of the namespace; flags `--purge` (also removes the database PVC) and `--ingress` (removes ingress-nginx). The same context check as above.
@@ -79,7 +79,7 @@ Note on ordering: the secrets needed by the `db-init` hook must exist before it 
 
 ## 7. Application configuration in the cluster
 
-- `catalog`/`orders`: environment variables as in [backend-spec.md §6](./backend-spec.md#6-configuration-environment-variables), with Kubernetes service addresses (`http://catalog-service:8080`, `http://keycloak:8080`) and `MINISHOP_SECURITY_ISSUER=http://auth.localtest.me/realms/minishop`.
+- `catalog-service`/`orders-service`: environment variables as in [backend-spec.md §6](./backend-spec.md#6-configuration-environment-variables), with Kubernetes service addresses (`http://catalog-service:8080`, `http://keycloak:8080`) and `MINISHOP_SECURITY_ISSUER=http://auth.localtest.me/realms/minishop`.
 - `frontend`: `config.json` with `issuer` = `http://auth.localtest.me/realms/minishop`; in Kubernetes nginx serves only static files – `/api/*` routing is done by the Ingress (see [frontend-spec.md §6](./frontend-spec.md#6-build-and-container)).
 - Keycloak: `KC_HOSTNAME=http://auth.localtest.me`, development mode (`start-dev --import-realm`), database in `postgres-local`.
 

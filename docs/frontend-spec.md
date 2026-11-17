@@ -91,7 +91,7 @@ Header (number, status, date, total), table of items (name, unit price, quantity
 
 - Multi-stage image: `node` (build) → `nginx` (serving `dist`). The `nginx.conf` file:
   - `try_files $uri /index.html` (SPA fallback),
-  - `location /api/catalog/ { proxy_pass http://catalog:8080; }`, `location /api/orders/ { proxy_pass http://orders:8080; }` (only in the docker-compose variant; in Kubernetes routing is done by the Ingress – upstream names from environment variables),
+  - `location /api/catalog/ { proxy_pass http://catalog-service:8080; }`, `location /api/orders/ { proxy_pass http://orders-service:8080; }` (only in the docker-compose variant; in Kubernetes routing is done by the Ingress – upstream names from environment variables),
   - `location /internal/ { return 404; }` (no routing to `/internal/**`, no SPA fallback),
   - security headers (`X-Content-Type-Options`, `Referrer-Policy`, `Content-Security-Policy` adapted to the Keycloak address),
   - generating `/config.json` from a template (`envsubst`) in the entrypoint.

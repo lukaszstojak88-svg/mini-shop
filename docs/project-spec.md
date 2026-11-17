@@ -29,7 +29,7 @@ Educational/portfolio project: a small online shop running locally (docker-compo
 
 | Area | Choice |
 |---|---|
-| Backend | Java 21 LTS, Spring Boot (latest stable line), Maven + wrapper |
+| Backend | Java 25 LTS, Spring Boot (latest stable line), Maven + wrapper |
 | Spring modules | Web, Validation, Data JPA, Security (resource server), OAuth2 Client (client credentials), Actuator, Cloud OpenFeign, Resilience4j (circuit breaker) |
 | Mapping | MapStruct (no Lombok – DTOs as `record`) |
 | Database | PostgreSQL (single instance, separate databases: `catalog`, `orders`, `keycloak`) |
@@ -48,16 +48,20 @@ Educational/portfolio project: a small online shop running locally (docker-compo
 
 | Component | Version |
 |---|---|
-| Java | 21 |
-| Spring Boot | _to be filled in step 0.1_ |
-| Spring Cloud | _to be filled; verify compatibility with the Boot version_ |
-| Keycloak | _to be filled (pin the exact image tag)_ |
-| PostgreSQL | _to be filled_ |
-| Angular / Node | _to be filled_ |
+| Java | 25 (LTS) |
+| Spring Boot | 4.1.2 |
+| Spring Cloud | 2025.1.4 "Oakwood" (Spring Cloud OpenFeign 5.0.4) |
+| Keycloak | 26.8.2 (image `quay.io/keycloak/keycloak:26.8.2`) |
+| PostgreSQL | 18.7 (image `postgres:18.7`) |
+| Angular / Angular Material | 22.2.x (`@angular/core` 22.2.6, `@angular/material` 22.2.7) |
+| angular-oauth2-oidc | 22.0.2 |
+| Node.js | 26 (Active LTS) |
 | Elastic Stack (optional module) | _fill in only when the module is enabled_ |
 | Prometheus / Grafana / kube-prometheus-stack (optional module) | _fill in only when the module is enabled_ |
 
 > If Spring Cloud OpenFeign does not yet support the latest Spring Boot line, use the latest supported line and note it in the table.
+>
+> **Compatibility (verified 2026-11-17):** Spring Cloud 2025.1.4 is based on Spring Boot 4.0.9 and officially supports Spring Boot 4.1.2 (the 2025.1.x line covers Boot 4.0.x and 4.1.x since 2025.1.2). Spring Boot 4.2 and Spring Cloud 2026.0 "Paddington" are still release candidates (GA planned for 2026-11-19) – do not use them; upgrade later as a separate change. PostgreSQL 19 GA is also scheduled for 2026-11-19, so the project stays on 18. Angular 22 requires Node `^22.22.3 || ^24.15.0 || >=26.0.0`.
 
 ## 4. Architecture
 
@@ -87,17 +91,18 @@ Browser
 ├── README.md
 ├── docker-compose.yml
 ├── .env.example
+├── .gitattributes            # LF for *.sh and mvnw (Windows: core.autocrlf)
 ├── docs/                     # specifications (this directory); docs/pl/ – Polish copies (local only, git-ignored)
 ├── services/
 │   ├── pom.xml               # parent + modules
 │   ├── mvnw, .mvn/
-│   ├── catalog/              # Spring Boot
-│   └── orders/               # Spring Boot
+│   ├── catalog-service/      # Spring Boot
+│   └── orders-service/       # Spring Boot
 ├── frontend/                 # Angular
 ├── infra/
 │   ├── local/                # Postgres init SQL, Keycloak realm (dev), elk/ (Filebeat, Kibana objects)
 │   ├── terraform/            # bootstrap/, envs/dev/, modules/
-│   └── helm/                 # charts: catalog, orders, frontend, keycloak, db-init, postgres-local (local only)
+│   └── helm/                 # charts: catalog-service, orders-service, frontend, keycloak, db-init, postgres-local (local only)
 ├── scripts/                  # helper scripts (smoke, k8s-local-up/down)
 └── .github/workflows/
 ```
@@ -217,8 +222,9 @@ Deliberate simplifications – do not "fix" them without a request.
 
 ## 10. Default assumptions (to be confirmed by the project owner)
 
-- Catalog reads (`GET /api/catalog/products/**`) are **public** (no login); orders require login.
-- User self-registration in Keycloak is **enabled**.
+- Catalog reads (`GET /api/catalog/products/**`) are **public** (no login); orders require login. **Confirmed.**
+- User self-registration in Keycloak is **enabled**. **Confirmed.**
+- `groupId` and package root `pl.minishop`. **Confirmed.**
 - Repository on GitHub, CI/CD = GitHub Actions.
 - AWS region: `eu-central-1`.
 - A Route 53 domain is available for the AWS deployment (without a domain: see [infra-spec.md](./infra-spec.md), section "Domain and TLS").

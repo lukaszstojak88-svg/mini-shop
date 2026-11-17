@@ -1,5 +1,30 @@
 # IDE
 .idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Polish reference copies of the specifications (local only)
 docs/pl/
+
+# Local environment (secrets) – only .env.example is versioned
+.env
+
+# Java / Maven
+target/
+
+# Angular / Node
+node_modules/
+dist/
+.angular/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
